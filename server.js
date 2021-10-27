@@ -18,7 +18,7 @@ var userData = {
 
 //server configuration
 const server = express();
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 5000;
 const pusher = new Pusher({
  appId: "1282554",
  key: "4f79555c3080807b1d69",
@@ -93,18 +93,17 @@ server.post("/sendMessage", (req, res) => {
 server.post("/createNewUser", (req, res) => {
  userData = req.body;
  // check if user already exist or not !!
- userModel.find({ email: req.body.email }, async (err, docs) => {
-  if (err) {
-   await UserModel.create(userData, async (err, data) => {
+ userModel.find({ email: userData.email }, async (err, docs) => {
+  if (docs.length > 0) {
+   res.status(200).send({ message: "Login successfull", created: false, data: userData });
+  } else {
+   userModel.create(userData, (err, data) => {
     if (err) {
      res.status(500).send(err);
     } else {
      res.status(200).send({ message: "Registered successfull", created: true, data: userData });
     }
    })
-  } else {
-   console.log("user already exist !!")
-   res.status(200).send({ message: "User already Created", created: false, data: userData });
   }
  })
 })
@@ -124,6 +123,15 @@ server.get("/getUser", (req, res) => {
   }
  })
 })
+
+//heroku hosting
+if (process.env.NODE_ENV === "production") {
+ app.use(express.static("frontend/build"));
+ const path = require("path");
+ app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'));
+ })
+}
 
 //listening
 server.listen(port, () => {
