@@ -62,9 +62,9 @@ db.once('open', () => {
 
 })
 // <------ api routes ------->
-// server.get("/", (req, res) => {
-//  res.end("Server Started .");
-// })
+server.get("/", (req, res) => {
+ res.end("Server Started .");
+})
 
 //reading message
 server.get("/getMessage", (req, res) => {
