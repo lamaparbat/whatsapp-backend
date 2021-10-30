@@ -1,12 +1,13 @@
 //importing modules
 const express = require("express");
+require("dotenv").config();
+const path = require("path");
 const mongoose = require("mongoose");
 const Model = require("./dbModel.js");
 const userModel = require("./userModel.js")
 const Pusher = require("pusher");
 const cors = require("cors");
 const LocalStorage = require("node-localstorage").LocalStorage;
-const axios = require("axios").create({ baseURL: "http://localhost:8000" });
 
 //creating localstorage instance
 // const localStorage = new LocalStorage('./scratch');
@@ -18,7 +19,7 @@ var userData = {
 
 //server configuration
 const server = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT;
 const pusher = new Pusher({
  appId: "1282554",
  key: "4f79555c3080807b1d69",
@@ -61,9 +62,9 @@ db.once('open', () => {
 
 })
 // <------ api routes ------->
-server.get("/", (req, res) => {
- res.end("Server Started .");
-})
+// server.get("/", (req, res) => {
+//  res.end("Server Started .");
+// })
 
 //reading message
 server.get("/getMessage", (req, res) => {
@@ -125,11 +126,15 @@ server.get("/getUser", (req, res) => {
 })
 
 //heroku hosting
+const dir = __dirname.slice(0, 37) + "/frontend/build/";
 if (process.env.NODE_ENV === "production") {
- app.use(express.static("frontend/build"));
- const path = require("path");
- app.get("*", (req, res) => {
-  res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'));
+ server.use(express.static(dir))
+ server.get("*", (req, res) => {
+  res.sendFile(path.join(dir,"/index.html"))
+ })
+} else {
+ server.use("/", (req, res) => {
+  res.send("Server oo started...")
  })
 }
 
