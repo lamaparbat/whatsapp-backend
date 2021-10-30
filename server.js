@@ -125,19 +125,6 @@ server.get("/getUser", (req, res) => {
  })
 })
 
-//heroku hosting
-const dir = __dirname.slice(0, 37) + "/frontend/build/";
-if (process.env.NODE_ENV === "production") {
- server.use(express.static(dir))
- server.get("*", (req, res) => {
-  res.sendFile(path.join(dir,"/index.html"))
- })
-} else {
- server.use("/", (req, res) => {
-  res.send("Server oo started...")
- })
-}
-
 //listening
 server.listen(port, () => {
  console.log(`Listening to the port ${port}`);
