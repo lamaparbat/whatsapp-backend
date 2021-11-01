@@ -46,12 +46,15 @@ mongoose.connect(conUrl, {
 const db = mongoose.connection;
 db.once('open', () => {
  console.log("Database connected !!")
+ 
+ //messages listener
  const MsgCollection = db.collection('messagecontents');
  const changeStream = MsgCollection.watch();
  changeStream.on("change", (change) => {
   if (change.operationType === 'insert') {
    const messageDetails = change.fullDocument;
    console.log(messageDetails)
+
    console.log(`${change.operationType} event triggered!!`)
    pusher.trigger('messagecontents', 'inserted', messageDetails);
 
@@ -59,6 +62,18 @@ db.once('open', () => {
    console.log(`${change.operationType} event triggered!!`)
   }
  })
+ 
+ //user online status listener
+ const Users = db.collection('users');
+ const userStream = Users.watch();
+ 
+ userStream.on('change', (change) => {
+  if (change.operationType === "update") {
+   let data = true;
+   pusher.trigger('users', 'updated', data);
+  }
+ })
+ 
 
 })
 // <------ api routes ------->
@@ -93,15 +108,38 @@ server.post("/sendMessage", (req, res) => {
 //creating a new user
 server.post("/createNewUser", (req, res) => {
  userData = req.body;
+
  // check if user already exist or not !!
  userModel.find({ email: userData.email }, async (err, docs) => {
   if (docs.length > 0) {
+   userModel.updateOne({ email: userData.email }, {
+    '$set': {
+     online: true
+    }
+   }, (err, result) => {
+    if (err) {
+     console.log(err)
+    } else {
+     console.log("Login successfull !!")
+    }
+   })
    res.status(200).send({ message: "Login successfull", created: false, data: userData });
   } else {
    userModel.create(userData, (err, data) => {
     if (err) {
      res.status(500).send(err);
     } else {
+     userModel.updateOne({ email: userData.email }, {
+      '$set': {
+       online: true
+      }
+     }, (err, result) => {
+      if (err) {
+       console.log(err)
+      } else {
+       console.log("Login successfull !!")
+      }
+     })
      res.status(200).send({ message: "Registered successfull", created: true, data: userData });
     }
    })
@@ -121,6 +159,23 @@ server.get("/getUser", (req, res) => {
    res.status(500).send(err)
   } else {
    res.status(200).send(data)
+  }
+ })
+})
+
+// offline status db update
+server.post("/logout", (req, res) => {
+ console.log(req.body.email)
+ userModel.updateOne({ email: req.body.email }, {
+  '$set': {
+   online: false,
+   timestamp:new Date().toLocaleTimeString()
+  }
+ }, (err, result) => {
+  if (err) {
+   console.log(err)
+  } else {
+   console.log("updated successfully!!")
   }
  })
 })
